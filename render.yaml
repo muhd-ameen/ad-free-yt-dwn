@@ -8,7 +8,3 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.18
-    disk:
-      name: downloads-disk
-      mountPath: /opt/render/project/src/downloads
-      sizeGB: 1
