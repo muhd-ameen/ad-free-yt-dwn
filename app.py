@@ -558,6 +558,7 @@ def cleanup_old_files():
 # Download worker function
 def download_worker():
     """Background worker to process download queue"""
+    print("Download worker thread started")
     while True:
         try:
             task = download_queue.get(timeout=1)
@@ -568,12 +569,15 @@ def download_worker():
             url = task['url']
             format_key = task['format']
             
+            print(f"Processing download task: {task_id} for URL: {url}")
+            
             # Update status
             download_status[task_id] = {
                 "status": "downloading",
                 "progress": 0,
                 "filename": "",
-                "error": ""
+                "error": "",
+                "title": ""
             }
             
             try:
@@ -696,8 +700,15 @@ def download_worker():
             print(f"Worker error: {e}")
 
 # Start background worker
-worker_thread = threading.Thread(target=download_worker, daemon=True)
-worker_thread.start()
+def start_worker():
+    try:
+        worker_thread = threading.Thread(target=download_worker, daemon=True)
+        worker_thread.start()
+        print("Background worker started successfully")
+    except Exception as e:
+        print(f"Error starting worker: {e}")
+
+start_worker()
 
 # Routes
 @app.route("/")
@@ -754,6 +765,14 @@ def serve_file(filename):
 def cleanup():
     cleanup_old_files()
     return jsonify({"success": True, "message": "Cleanup completed"})
+
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "healthy",
+        "queue_size": download_queue.qsize(),
+        "active_downloads": len([s for s in download_status.values() if s["status"] in ["pending", "downloading"]])
+    })
 
 # Periodic cleanup (run every hour)
 def periodic_cleanup():
